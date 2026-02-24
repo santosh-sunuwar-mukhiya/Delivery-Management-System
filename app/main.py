@@ -1,13 +1,66 @@
-from fastapi import FastAPI
-from . import shipment
+from fastapi import FastAPI, HTTPException, status
+from scalar_fastapi import get_scalar_api_reference
+from typing import Any
 
-app= FastAPI()
+app = FastAPI()
 
-app.include_router(shipment.router)
+shipments = {
+    12701: {"weight": 0.6, "content": "rubber ducks", "status": "placed"},
+    12702: {"weight": 2.3, "content": "magic wands", "status": "shipped"},
+    12703: {"weight": 1.1, "content": "unicorn horns", "status": "delivered"},
+    12704: {"weight": 3.5, "content": "dragon eggs", "status": "in transit"},
+    12705: {"weight": 0.9, "content": "wizard hats", "status": "returned"},
+}
 
+#get all the post.
 @app.get("/")
-def shipment():
-    return {
-        "title": "I am learning fastapi.",
-        "content": "I am making a simple delivery app using fastapi."
+def get_all_shipments():
+    return shipments
+
+#get one shipment with ID using query parameter.
+@app.get("/shipment")
+def get_shipment(id: int) -> dict[str, Any]:
+    if id not in shipments:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item with {id} was not found.")
+    return shipments[id]
+
+#post shipment with Id using post method.
+@app.post("/shipment")
+def submit_shipment(content: str, weight: float) -> dict[str, int]:
+    if weight > 25:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="The must be less than 25 Kg")
+    new_id = max(shipments.keys()) + 1
+
+    shipments[new_id] = {
+        "weight": weight,
+        "content": content,
+        "status":"placed"
     }
+
+    return {"new data": new_id}
+
+#update the field of shipment.
+@app.patch("/shipment")
+def update_shipment(id: int, body: dict[str, Any]) -> dict[str, Any]:
+    shipments[id].update(body)
+    return shipments[id]
+
+#deleting the shipment with the help of shipment id.
+@app.delete("/shipment")
+def delete_shipment(id: int) -> dict[str, str]:
+    shipments.pop(id)
+    return {"data": f"shipment with id {id} is deleted."}
+
+
+
+
+
+#scalar API documentation
+@app.get("/scalar", include_in_schema=False)
+def get_scalar():
+    return get_scalar_api_reference(
+        openapi_url = app.openapi_url,
+        title = "Scalar API"
+    )
+
+
