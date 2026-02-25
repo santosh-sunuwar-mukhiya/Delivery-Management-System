@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, status
 from scalar_fastapi import get_scalar_api_reference
 from typing import Any
+from .schemas import Shipment
 
 app = FastAPI()
 
@@ -17,23 +18,25 @@ shipments = {
 def get_all_shipments():
     return shipments
 
-#get one shipment with ID using query parameter.
-@app.get("/shipment")
-def get_shipment(id: int) -> dict[str, Any]:
+#get one shipment with ID and field using query parameter and path parameter.
+@app.get("/shipment/{field}")
+def get_shipment_field(field: str, id: int) -> dict[str, Any]:
     if id not in shipments:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item with {id} was not found.")
-    return shipments[id]
+    return {
+        field: shipments[id][field]
+    }
 
 #post shipment with Id using post method.
 @app.post("/shipment")
-def submit_shipment(content: str, weight: float) -> dict[str, int]:
-    if weight > 25:
+def submit_shipment(shipment: Shipment) -> dict[str, Any]:
+    if shipment.weight > 25:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="The must be less than 25 Kg")
     new_id = max(shipments.keys()) + 1
 
     shipments[new_id] = {
-        "weight": weight,
-        "content": content,
+        "weight": shipment.weight,
+        "content": shipment.content,
         "status":"placed"
     }
 
@@ -50,9 +53,6 @@ def update_shipment(id: int, body: dict[str, Any]) -> dict[str, Any]:
 def delete_shipment(id: int) -> dict[str, str]:
     shipments.pop(id)
     return {"data": f"shipment with id {id} is deleted."}
-
-
-
 
 
 #scalar API documentation
