@@ -1,25 +1,26 @@
 from fastapi import FastAPI, HTTPException, status
 from scalar_fastapi import get_scalar_api_reference
 from typing import Any
-from .schemas import Shipment
+from .schemas import BaseShipment, ShipmentRead, ShipmentCreate, ShipmentUpdate
+from enum import Enum
 
 app = FastAPI()
 
 shipments = {
-    12701: {"weight": 0.6, "content": "rubber ducks", "status": "placed"},
-    12702: {"weight": 2.3, "content": "magic wands", "status": "shipped"},
+    12701: {"weight": 1, "content": "rubber ducks", "status": "placed"},
+    12702: {"weight": 2.3, "content": "magic wands", "status": "in_transit"},
     12703: {"weight": 1.1, "content": "unicorn horns", "status": "delivered"},
-    12704: {"weight": 3.5, "content": "dragon eggs", "status": "in transit"},
-    12705: {"weight": 0.9, "content": "wizard hats", "status": "returned"},
+    12704: {"weight": 3.5, "content": "dragon eggs", "status": "in_transit"},
+    12705: {"weight": 1.9, "content": "wizard hats", "status": "out_for_delivery"},
 }
 
 #get all the post.
-@app.get("/")
+@app.get("/", response_model=dict[int, BaseShipment])
 def get_all_shipments():
     return shipments
 
 #get one shipment with ID and field using query parameter and path parameter.
-@app.get("/shipment/{field}")
+@app.get("/shipment/{field}", response_model=dict[str, Any])
 def get_shipment_field(field: str, id: int) -> dict[str, Any]:
     if id not in shipments:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item with {id} was not found.")
@@ -29,22 +30,19 @@ def get_shipment_field(field: str, id: int) -> dict[str, Any]:
 
 #post shipment with Id using post method.
 @app.post("/shipment")
-def submit_shipment(shipment: Shipment) -> dict[str, Any]:
-    if shipment.weight > 25:
-        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="The must be less than 25 Kg")
+def submit_shipment(shipment: ShipmentCreate) -> dict[str, int]:
     new_id = max(shipments.keys()) + 1
 
     shipments[new_id] = {
-        "weight": shipment.weight,
-        "content": shipment.content,
-        "status":"placed"
+        **shipment.model_dump(),
+        "status":"placed",
     }
 
     return {"new data": new_id}
 
 #update the field of shipment.
-@app.patch("/shipment")
-def update_shipment(id: int, body: dict[str, Any]) -> dict[str, Any]:
+@app.patch("/shipment", response_model=ShipmentRead)
+def update_shipment(id: int, body: ShipmentUpdate):
     shipments[id].update(body)
     return shipments[id]
 

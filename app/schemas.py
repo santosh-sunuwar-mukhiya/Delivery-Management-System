@@ -1,7 +1,29 @@
 from pydantic import BaseModel, Field
-from typing import Annotated
+from typing import Annotated, Optional
+from random import randint
+from enum import Enum
 
-class Shipment(BaseModel):
-    content: str = Field(min_length=3)
-    weight: float = Field(lt=25)
-    destination: int
+def random():
+    return randint(1111, 1170)
+
+class ShipmentStatus(str, Enum):
+    placed=  "placed"
+    in_transit = "in_transit"
+    out_for_delivery = "out_for_delivery"
+    delivered = "delivered"
+
+class BaseShipment(BaseModel):
+    content: Annotated[str, Field(min_length=3, max_length=25)]
+    weight: float = Field(description="the weight of the item", le=25, ge=1)
+    destination: Optional[int] = Field(default_factory=random)
+
+class ShipmentRead(BaseShipment):
+    status: ShipmentStatus
+
+class ShipmentCreate(BaseShipment):
+    pass
+
+class ShipmentUpdate(BaseModel):
+    status: ShipmentStatus
+
+
