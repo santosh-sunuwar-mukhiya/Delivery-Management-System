@@ -24,6 +24,9 @@ class ShipmentCreate(BaseShipment):
     pass
 
 class ShipmentUpdate(BaseModel):
+    content: Optional[str] = Field(default=None)
+    weight: Optional[float] = Field(le=25, default=None) 
+    destination: Optional[int] = Field(default=None)
     status: ShipmentStatus
 
 

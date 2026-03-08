@@ -3,16 +3,17 @@ from scalar_fastapi import get_scalar_api_reference
 from typing import Any
 from .schemas import BaseShipment, ShipmentRead, ShipmentCreate, ShipmentUpdate
 from enum import Enum
+from .database import save, shipments
 
 app = FastAPI()
 
-shipments = {
-    12701: {"weight": 1, "content": "rubber ducks", "status": "placed"},
-    12702: {"weight": 2.3, "content": "magic wands", "status": "in_transit"},
-    12703: {"weight": 1.1, "content": "unicorn horns", "status": "delivered"},
-    12704: {"weight": 3.5, "content": "dragon eggs", "status": "in_transit"},
-    12705: {"weight": 1.9, "content": "wizard hats", "status": "out_for_delivery"},
-}
+# shipments = {
+#     12701: {"weight": 1, "content": "rubber ducks", "status": "placed"},
+#     12702: {"weight": 2.3, "content": "magic wands", "status": "in_transit"},
+#     12703: {"weight": 1.1, "content": "unicorn horns", "status": "delivered"},
+#     12704: {"weight": 3.5, "content": "dragon eggs", "status": "in_transit"},
+#     12705: {"weight": 1.9, "content": "wizard hats", "status": "out_for_delivery"},
+# }
 
 #get all the post.
 @app.get("/", response_model=dict[int, BaseShipment])
@@ -29,21 +30,28 @@ def get_shipment_field(field: str, id: int) -> dict[str, Any]:
     }
 
 #post shipment with Id using post method.
-@app.post("/shipment")
+@app.post("/shipment", response_model=None)
 def submit_shipment(shipment: ShipmentCreate) -> dict[str, int]:
-    new_id = max(shipments.keys()) + 1
+    new_id = max(int(k) for k in shipments.keys()) + 1
 
     shipments[new_id] = {
         **shipment.model_dump(),
+        "id":new_id,
         "status":"placed",
     }
+    save()
 
     return {"new data": new_id}
 
 #update the field of shipment.
 @app.patch("/shipment", response_model=ShipmentRead)
 def update_shipment(id: int, body: ShipmentUpdate):
-    shipments[id].update(body)
+    print("#"*20)
+    print(body)
+    print("#"*20)
+    print(body.model_dump())
+    shipments[id].update(body.model_dump(exclude_unset=True))
+    save()
     return shipments[id]
 
 #deleting the shipment with the help of shipment id.
