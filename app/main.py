@@ -3,9 +3,11 @@ from scalar_fastapi import get_scalar_api_reference
 from typing import Any
 from .schemas import BaseShipment, ShipmentRead, ShipmentCreate, ShipmentUpdate
 from enum import Enum
-from .database import save, shipments
+from app.database import Database
 
 app = FastAPI()
+
+db = Database()
 
 # shipments = {
 #     12701: {"weight": 1, "content": "rubber ducks", "status": "placed"},
@@ -16,48 +18,37 @@ app = FastAPI()
 # }
 
 #get all the post.
-@app.get("/", response_model=dict[int, BaseShipment])
+@app.get("/", response_model=None)
 def get_all_shipments():
-    return shipments
+    return db.get_all()
 
 #get one shipment with ID and field using query parameter and path parameter.
 @app.get("/shipment/{field}", response_model=dict[str, Any])
-def get_shipment_field(field: str, id: int) -> dict[str, Any]:
-    if id not in shipments:
+def get_shipment_field( id: int) -> dict[str, Any]:
+    shipment = db.get_by_id(id)
+    if shipment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item with {id} was not found.")
-    return {
-        field: shipments[id][field]
-    }
+    return shipment
 
 #post shipment with Id using post method.
 @app.post("/shipment", response_model=None)
 def submit_shipment(shipment: ShipmentCreate) -> dict[str, int]:
-    new_id = max(int(k) for k in shipments.keys()) + 1
-
-    shipments[new_id] = {
-        **shipment.model_dump(),
-        "id":new_id,
-        "status":"placed",
-    }
-    save()
-
+    new_id = db.create(shipment)
     return {"new data": new_id}
 
 #update the field of shipment.
 @app.patch("/shipment", response_model=ShipmentRead)
-def update_shipment(id: int, body: ShipmentUpdate):
+def update_shipment(id: int, shipment: ShipmentUpdate):
     print("#"*20)
-    print(body)
+    print(shipment)
     print("#"*20)
-    print(body.model_dump())
-    shipments[id].update(body.model_dump(exclude_unset=True))
-    save()
-    return shipments[id]
+    updated_shipment = db.update(id, shipment)
+    return updated_shipment
 
 #deleting the shipment with the help of shipment id.
 @app.delete("/shipment")
 def delete_shipment(id: int) -> dict[str, str]:
-    shipments.pop(id)
+    db.delete(id)
     return {"data": f"shipment with id {id} is deleted."}
 
 
