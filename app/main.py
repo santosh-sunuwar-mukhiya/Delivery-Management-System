@@ -1,13 +1,22 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Depends
 from scalar_fastapi import get_scalar_api_reference
 from typing import Any
+from sqlmodel import Session
+from contextlib import asynccontextmanager
 from .schemas import BaseShipment, ShipmentRead, ShipmentCreate, ShipmentUpdate
 from enum import Enum
-from app.database import Database
+from app.databases.session import get_session, create_db_and_tables
+from app.databases import crud
+from app.databases.models import Shipment
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Create database tables
+    create_db_and_tables()
+    yield
+    # Shutdown: cleanup if needed
 
-db = Database()
+app = FastAPI(lifespan=lifespan)
 
 # shipments = {
 #     12701: {"weight": 1, "content": "rubber ducks", "status": "placed"},
@@ -17,39 +26,40 @@ db = Database()
 #     12705: {"weight": 1.9, "content": "wizard hats", "status": "out_for_delivery"},
 # }
 
-#get all the post.
-@app.get("/", response_model=None)
-def get_all_shipments():
-    return db.get_all()
+#get all the shipments.
+@app.get("/", response_model=list[Shipment])
+def get_all_shipments(session: Session = Depends(get_session)):
+    return crud.get_all_shipments(session)
 
-#get one shipment with ID and field using query parameter and path parameter.
-@app.get("/shipment/{field}", response_model=dict[str, Any])
-def get_shipment_field( id: int) -> dict[str, Any]:
-    shipment = db.get_by_id(id)
+#get one shipment by ID.
+@app.get("/shipment/{shipment_id}", response_model=Shipment)
+def get_shipment(shipment_id: int, session: Session = Depends(get_session)) -> Shipment:
+    shipment = crud.get_shipment_by_id(session, shipment_id)
     if shipment is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item with {id} was not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Shipment with id {shipment_id} was not found.")
     return shipment
 
-#post shipment with Id using post method.
-@app.post("/shipment", response_model=None)
-def submit_shipment(shipment: ShipmentCreate) -> dict[str, int]:
-    new_id = db.create(shipment)
-    return {"new data": new_id}
+#post shipment using post method.
+@app.post("/shipment", response_model=Shipment, status_code=status.HTTP_201_CREATED)
+def submit_shipment(shipment: ShipmentCreate, session: Session = Depends(get_session)) -> Shipment:
+    new_shipment = crud.create_shipment(session, shipment)
+    return new_shipment
 
-#update the field of shipment.
-@app.patch("/shipment", response_model=ShipmentRead)
-def update_shipment(id: int, shipment: ShipmentUpdate):
-    print("#"*20)
-    print(shipment)
-    print("#"*20)
-    updated_shipment = db.update(id, shipment)
+#update the shipment fields.
+@app.patch("/shipment/{shipment_id}", response_model=Shipment)
+def update_shipment(shipment_id: int, shipment: ShipmentUpdate, session: Session = Depends(get_session)):
+    updated_shipment = crud.update_shipment(session, shipment_id, shipment)
+    if updated_shipment is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Shipment with id {shipment_id} was not found.")
     return updated_shipment
 
 #deleting the shipment with the help of shipment id.
-@app.delete("/shipment")
-def delete_shipment(id: int) -> dict[str, str]:
-    db.delete(id)
-    return {"data": f"shipment with id {id} is deleted."}
+@app.delete("/shipment/{shipment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_shipment(shipment_id: int, session: Session = Depends(get_session)):
+    deleted = crud.delete_shipment(session, shipment_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Shipment with id {shipment_id} was not found.")
+    return None
 
 
 #scalar API documentation

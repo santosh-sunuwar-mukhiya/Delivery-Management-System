@@ -1,16 +1,11 @@
 from pydantic import BaseModel, Field
 from typing import Annotated, Optional
 from random import randint
-from enum import Enum
+from datetime import datetime
+from app.databases.models import ShipmentStatus
 
 def random():
     return randint(1111, 1170)
-
-class ShipmentStatus(str, Enum):
-    placed=  "placed"
-    in_transit = "in_transit"
-    out_for_delivery = "out_for_delivery"
-    delivered = "delivered"
 
 class BaseShipment(BaseModel):
     content: Annotated[str, Field(min_length=3, max_length=25)]
@@ -19,6 +14,7 @@ class BaseShipment(BaseModel):
 
 class ShipmentRead(BaseShipment):
     status: ShipmentStatus
+    estimated_delivery: Optional[datetime] = None
 
 class ShipmentCreate(BaseShipment):
     pass
