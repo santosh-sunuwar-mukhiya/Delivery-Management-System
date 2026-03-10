@@ -1,28 +1,24 @@
 from pydantic import BaseModel, Field
-from typing import Annotated, Optional
-from random import randint
 from datetime import datetime
 from app.databases.models import ShipmentStatus
+from typing import Optional
 
-def random():
-    return randint(1111, 1170)
+
 
 class BaseShipment(BaseModel):
-    content: Annotated[str, Field(min_length=3, max_length=25)]
+    content:str
     weight: float = Field(description="the weight of the item", le=25, ge=1)
-    destination: Optional[int] = Field(default_factory=random)
+    destination: int 
 
 class ShipmentRead(BaseShipment):
     status: ShipmentStatus
-    estimated_delivery: Optional[datetime] = None
+    estimated_delivery: datetime 
 
 class ShipmentCreate(BaseShipment):
     pass
 
 class ShipmentUpdate(BaseModel):
-    content: Optional[str] = Field(default=None)
-    weight: Optional[float] = Field(le=25, default=None) 
-    destination: Optional[int] = Field(default=None)
-    status: ShipmentStatus
+    status: Optional[ShipmentStatus]= Field(default=None)
+    estimated_delivery: Optional[datetime] = Field(default=None)
 
 

@@ -10,6 +10,7 @@ class ShipmentStatus(str, Enum):
     delivered = "delivered"
 
 class Shipment(SQLModel, table=True):
+
     id: Optional[int] = Field(default=None, primary_key=True)
     content : str 
     weight: float = Field(lt=25)
