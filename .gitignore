@@ -1,8 +1,0 @@
-fastapienv/
-__pycache__/
-*.py[cod]
-.env
-.DS_Store
-app/shipments.json
-app/sqlite.db
-*.db
