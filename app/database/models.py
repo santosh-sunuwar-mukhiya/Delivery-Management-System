@@ -25,8 +25,8 @@ class Shipment(SQLModel, table = True):
 
 class Seller(SQLModel, table=True):
 
-    id: int = Field(default=True, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     name: str
 
-    password_hased: str
     email: EmailStr
+    password_hash: str
