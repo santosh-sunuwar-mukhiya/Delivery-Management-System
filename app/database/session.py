@@ -3,21 +3,21 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 from sqlmodel import SQLModel
 
-from app.config import settings
+from app.config import db_settings
 
 # Create a database engine to connect with database
 engine = create_async_engine(
     # database type/dialect and file name
-    url=settings.POSTGRES_URL,
+    url=db_settings.POSTGRES_URL,
     # Log sql queries
     echo=True,
 )
 
 async_session_factory = sessionmaker(
-    bind=engine,
+    bind=engine,  # type: ignore
     class_=AsyncSession,
     expire_on_commit=False,
-)
+)  # type: ignore
 
 
 async def create_db_tables():
@@ -74,5 +74,5 @@ async def create_db_tables():
 
 
 async def get_session():
-    async with async_session_factory() as session:
+    async with async_session_factory() as session:  # type: ignore
         yield session
