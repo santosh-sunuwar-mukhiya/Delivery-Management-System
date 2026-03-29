@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 _base_config = SettingsConfigDict(
     env_file="./.env",
     env_ignore_empty=True,
@@ -21,11 +22,12 @@ class DatabaseSettings(BaseSettings):
 
 
 class SecuritySettings(BaseSettings):
+
     JWT_SECRET: str
     JWT_ALGORITHM: str
 
     model_config = _base_config
 
 
-db_settings = DatabaseSettings()  # type: ignore
-security_settings = SecuritySettings()  # type: ignore
+db_settings = DatabaseSettings()
+security_settings = SecuritySettings()
