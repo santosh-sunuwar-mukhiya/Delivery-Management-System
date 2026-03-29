@@ -47,13 +47,27 @@ async def update_shipment(
             detail="No data provided to update",
         )
 
-    return await service.update(id, update)
+    shipment = await service.update(id, update)
+
+    if shipment is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Given id doesn't exist!",
+        )
+
+    return shipment
 
 
 ### Delete a shipment by id
 @router.delete("/")
 async def delete_shipment(id: int, service: ShipmentServiceDep) -> dict[str, str]:
     # Remove from database
-    await service.delete(id)
+    deleted = await service.delete(id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Given id doesn't exist!",
+        )
 
     return {"detail": f"Shipment with id #{id} is deleted!"}
