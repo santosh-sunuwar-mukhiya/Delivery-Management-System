@@ -11,6 +11,7 @@ from app.api.schemas.seller import SellerCreate
 from app.database.models import Seller
 
 from app.config import security_settings
+from app.utils import generate_access_token
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -22,7 +23,7 @@ class SellerService:
 
     async def add(self, credentials: SellerCreate) -> Seller:
         seller = Seller(
-            **credentials.model_dump(exclude=["password"]),
+            **credentials.model_dump(exclude=["password"]),  # type: ignore
             # Hashed password
             password_hash=password_context.hash(credentials.password),
         )
@@ -37,19 +38,19 @@ class SellerService:
 
         seller = result.scalar()
 
-        if seller is None or password_context.verify(password, seller.password_hash):
+        if seller is None or not password_context.verify(
+            password, seller.password_hash
+        ):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Email or Password is Incorrect.",
             )
 
-        token = jwt.encode(
-            payload={
-                "user": {"name": seller.name, "email": seller.email},
-                "exp": datetime.now() + timedelta(days=1),
-            },
-            algorithm=security_settings.JWT_ALGORITH,
-            key=security_settings.JWT_SECRET,
+        token = generate_access_token(
+            data={
+                "name": seller.name,
+                "id": seller.id,
+            }
         )  # type: ignore
 
         return token
