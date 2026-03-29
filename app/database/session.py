@@ -13,6 +13,12 @@ engine = create_async_engine(
     echo=True,
 )
 
+async_session_factory = sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
 
 async def create_db_tables():
     async with engine.begin() as connection:
@@ -68,9 +74,5 @@ async def create_db_tables():
 
 
 async def get_session():
-    async_session = sessionmaker(
-        bind=engine, class_=AsyncSession, expire_on_commit=False,
-    )
-
-    async with async_session() as session:
+    async with async_session_factory() as session:
         yield session
