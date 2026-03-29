@@ -1,20 +1,14 @@
-from datetime import datetime, timedelta
-
 from fastapi import HTTPException, status
-import jwt
+from passlib.context import CryptContext
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from passlib.context import CryptContext
-
 from app.api.schemas.seller import SellerCreate
 from app.database.models import Seller
-
-from app.config import security_settings
 from app.utils import generate_access_token
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 class SellerService:
     def __init__(self, session: AsyncSession):
@@ -23,7 +17,7 @@ class SellerService:
 
     async def add(self, credentials: SellerCreate) -> Seller:
         seller = Seller(
-            **credentials.model_dump(exclude=["password"]),  # type: ignore
+            **credentials.model_dump(exclude=["password"]),
             # Hashed password
             password_hash=password_context.hash(credentials.password),
         )
@@ -32,25 +26,27 @@ class SellerService:
         await self.session.refresh(seller)
 
         return seller
-
-    async def token(self, email, password):
-        result = await self.session.execute(select(Seller).where(Seller.email == email))
-
+    
+    async def token(self, email, password) -> str:
+        # Validate the credentials
+        result = await self.session.execute(
+            select(Seller).where(Seller.email == email)
+        ) 
         seller = result.scalar()
 
         if seller is None or not password_context.verify(
-            password, seller.password_hash
+            password,
+            seller.password_hash,
         ):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Email or Password is Incorrect.",
+                detail="Email or password is incorrect",
             )
-
-        token = generate_access_token(
-            data={
+        
+        token = generate_access_token(data={
+            "user": {
                 "name": seller.name,
                 "id": seller.id,
-            }
-        )  # type: ignore
+            }        })
 
         return token
