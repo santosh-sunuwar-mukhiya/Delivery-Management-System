@@ -23,8 +23,8 @@ class Shipment(SQLModel, table = True):
     estimated_delivery: datetime
 
 
-class Seller(SQLModel, table=True):
-
+class Seller(SQLModel, table = True):
+    
     id: int = Field(default=None, primary_key=True)
     name: str
 
