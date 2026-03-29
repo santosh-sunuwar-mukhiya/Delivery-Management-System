@@ -22,7 +22,7 @@ class DatabaseSettings(BaseSettings):
 
 class SecuritySettings(BaseSettings):
     JWT_SECRET: str
-    JWT_ALGORITH: str
+    JWT_ALGORITHM: str
 
     model_config = _base_config
 
