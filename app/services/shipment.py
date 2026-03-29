@@ -11,8 +11,8 @@ class ShipmentService:
         # Get database session to perform database operations
         self.session = session
 
-    # Get a shipment by id
-    async def get(self, id: int) -> Shipment | None:
+    # Get a shipment by id 
+    async def get(self, id: int) -> Shipment:
         return await self.session.get(Shipment, id)
 
     # Add a new shipment
@@ -29,12 +29,8 @@ class ShipmentService:
         return new_shipment
 
     # Update an existing shipment
-    async def update(self, id: int, shipment_update: dict) -> Shipment | None:
+    async def update(self, id: int, shipment_update: dict) -> Shipment:
         shipment = await self.get(id)
-
-        if shipment is None:
-            return None
-
         shipment.sqlmodel_update(shipment_update)
 
         self.session.add(shipment)
@@ -44,13 +40,6 @@ class ShipmentService:
         return shipment
 
     # Delete a shipment
-    async def delete(self, id: int) -> bool:
-        shipment = await self.get(id)
-
-        if shipment is None:
-            return False
-
-        await self.session.delete(shipment)
+    async def delete(self, id: int) -> None:
+        await self.session.delete(await self.get(id))
         await self.session.commit()
-
-        return True
