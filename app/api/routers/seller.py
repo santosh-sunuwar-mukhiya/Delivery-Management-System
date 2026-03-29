@@ -1,10 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+import jwt
 
-from ..dependencies import SellerServiceDep
+from app.database.models import Seller
+from app.utils import decode_access_token
+
+from ..dependencies import SellerServiceDep, SessionDep
 from ..schemas.seller import SellerCreate, SellerRead
+
+from app.core.security import oauth2_scheme
 
 router = APIRouter(prefix="/seller", tags=["Seller"])
 
