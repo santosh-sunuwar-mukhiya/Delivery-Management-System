@@ -1,4 +1,7 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 
 from ..dependencies import SellerServiceDep
 from ..schemas.seller import SellerCreate, SellerRead
@@ -13,3 +16,15 @@ async def register_seller(
     service: SellerServiceDep
 ):
     return await service.add(seller)
+
+
+@router.post("/token")
+async def login_seller(
+    request_form: Annotated[OAuth2PasswordRequestForm, Depends()],
+    service: SellerServiceDep,
+):
+    token = await service.token(request_form.username, request_form.password)  # type: ignore
+    return {
+        "access_token": token,
+        "type": "jwt",
+    }
