@@ -17,7 +17,7 @@ class SellerService:
 
     async def add(self, credentials: SellerCreate) -> Seller:
         seller = Seller(
-            **credentials.model_dump(exclude=["password"]),
+            **credentials.model_dump(exclude=["password"]),  # type: ignore
             # Hashed password
             password_hash=password_context.hash(credentials.password),
         )
@@ -26,7 +26,7 @@ class SellerService:
         await self.session.refresh(seller)
 
         return seller
-    
+
     async def token(self, email, password) -> str:
         # Validate the credentials
         result = await self.session.execute(
@@ -39,10 +39,10 @@ class SellerService:
             seller.password_hash,
         ):
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Email or password is incorrect",
             )
-        
+
         token = generate_access_token(data={
             "user": {
                 "name": seller.name,
