@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-
+from uuid import uuid4
 import jwt
 
 from app.config import security_settings
@@ -12,6 +12,7 @@ def generate_access_token(
     return jwt.encode(
         payload={
             **data,
+            "jti": str(uuid4()),
             "exp": datetime.now(timezone.utc) + expiry,
         },
         algorithm=security_settings.JWT_ALGORITHM,
