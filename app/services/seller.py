@@ -43,10 +43,13 @@ class SellerService:
                 detail="Email or password is incorrect",
             )
 
-        token = generate_access_token(data={
-            "user": {
-                "name": seller.name,
-                "id": seller.id,
-            }        })
+        token = generate_access_token(
+            data={
+                "user": {
+                    "name": seller.name,
+                    "id": str(seller.id),
+                }
+            }
+        )
 
         return token
