@@ -31,7 +31,7 @@ def upgrade() -> None:
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("created_at", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("serviceable_zip_codes", sa.ARRAY(sa.INTEGER()), nullable=True),
-        sa.Column("max_haldeling_capacity", sa.Integer(), nullable=False),
+        sa.Column("max_handling_capacity", sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.add_column(
