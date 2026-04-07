@@ -49,19 +49,9 @@ async def update_shipment(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No data provided to update",
         )
-    
-    # Validate logged in parter with assigned partner
-    # on the shipment with given id
-    shipment = await service.get(id)
-
-    if shipment.delivery_partner_id != partner.id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authorized",
-        )
 
     return await service.update(
-        shipment.sqlmodel_update(shipment_update),
+        shipment.sqlmodel_update(id, shipment_update, partner),  # type: ignore
     )
 
 
@@ -69,6 +59,6 @@ async def update_shipment(
 @router.delete("/")
 async def delete_shipment(id: UUID, service: ShipmentServiceDep) -> dict[str, str]:
     # Remove from database
-    await service.delete(id)
+    await service.delete(id)  # type: ignore
 
     return {"detail": f"Shipment with id #{id} is deleted!"}
