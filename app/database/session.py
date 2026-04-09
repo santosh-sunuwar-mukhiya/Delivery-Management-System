@@ -9,7 +9,7 @@ engine = create_async_engine(
     # database type/dialect and file name
     url=db_settings.POSTGRES_URL,
     # Log sql queries
-    echo=True,
+    # echo=True,
 )
 
 
