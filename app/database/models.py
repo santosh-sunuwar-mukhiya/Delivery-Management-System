@@ -3,8 +3,8 @@ from enum import Enum
 from uuid import UUID, uuid4
 
 from pydantic import EmailStr
-from sqlalchemy.dialects import postgresql
 from sqlalchemy import ARRAY, INTEGER
+from sqlalchemy.dialects import postgresql
 from sqlmodel import Column, Field, Relationship, SQLModel
 
 
@@ -32,6 +32,9 @@ class Shipment(SQLModel, table=True):
             default=datetime.now,
         )
     )
+
+    client_contact_email: EmailStr
+    client_contact_phone: int | None
 
     content: str
     weight: float = Field(le=25)
@@ -63,7 +66,7 @@ class Shipment(SQLModel, table=True):
 
 
 class ShipmentEvent(SQLModel, table=True):
-    __tablename__ = "shipment_event"  # type: ignore
+    __tablename__ = "shipment_event"
 
     id: UUID = Field(
         sa_column=Column(
@@ -94,6 +97,7 @@ class User(SQLModel):
     name: str
 
     email: EmailStr
+    email_verified: bool = Field(default=False)
     password_hash: str = Field(exclude=True)
 
 
