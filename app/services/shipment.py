@@ -13,7 +13,6 @@ from .delivery_partner import DeliveryPartnerService
 
 
 class ShipmentService(BaseService):
-
     def __init__(
         self,
         session: AsyncSession,
@@ -40,7 +39,6 @@ class ShipmentService(BaseService):
         partner = await self.partner_service.assign_shipment(
             new_shipment,
         )
-
         # Add the delivery partner foreign key
         new_shipment.delivery_partner_id = partner.id
 
@@ -64,7 +62,6 @@ class ShipmentService(BaseService):
         shipment_update: ShipmentUpdate,
         partner: DeliveryPartner,
     ) -> Shipment:
-
         # Validate logged in parter with assigned partner
         # on the shipment with given id
         shipment = await self.get(id)
@@ -74,15 +71,13 @@ class ShipmentService(BaseService):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not authorized",
             )
-
-        update = shipment_update.model_dump(
-            exclude_none=True,
-        )
-
+        
+        update = shipment_update.model_dump(exclude_none=True)
+        
         if shipment_update.estimated_delivery:
             shipment.estimated_delivery = shipment_update.estimated_delivery
 
-        if len(update) > 1 or "estimated_delivery" not in update:
+        if len(update) > 1 or not shipment_update.estimated_delivery:
             await self.event_service.add(
                 shipment=shipment,
                 **update,
@@ -90,22 +85,24 @@ class ShipmentService(BaseService):
 
         return await self._update(shipment)
 
-    # Cancel method.
     async def cancel(self, id: UUID, seller: Seller) -> Shipment:
+        # Validate the seller
         shipment = await self.get(id)
 
         if shipment.seller_id != seller.id:
             raise HTTPException(
-                status_code=status.HTTP_401_NOT_AUTHORIZED, detail="Not Authorized!"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not Authorized",
             )
-
+        
         event = await self.event_service.add(
-            shipment=shipment, status=ShipmentStatus.cancelled
+            shipment=shipment,
+            status=ShipmentStatus.cancelled,
         )
 
-        shipment.timeline.append(event)  # type: ignore
-
+        shipment.timeline.append(event)
         return shipment
+
 
     # Delete a shipment
     async def delete(self, id: UUID) -> None:
