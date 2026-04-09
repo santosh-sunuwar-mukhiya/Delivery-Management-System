@@ -13,10 +13,11 @@ class ShipmentStatus(str, Enum):
     in_transit = "in_transit"
     out_for_delivery = "out_for_delivery"
     delivered = "delivered"
+    cancelled = "cancelled"
 
 
 class Shipment(SQLModel, table=True):
-    __tablename__ = "shipment"  # type: ignore
+    __tablename__ = "shipment"
 
     id: UUID = Field(
         sa_column=Column(
@@ -35,7 +36,7 @@ class Shipment(SQLModel, table=True):
     content: str
     weight: float = Field(le=25)
     destination: int
-    estimated_delivery: datetime
+    estimated_delivery: datetime | None
 
     timeline: list["ShipmentEvent"] = Relationship(
         back_populates="shipment",
@@ -62,6 +63,8 @@ class Shipment(SQLModel, table=True):
 
 
 class ShipmentEvent(SQLModel, table=True):
+    __tablename__ = "shipment_event"  # type: ignore
+
     id: UUID = Field(
         sa_column=Column(
             postgresql.UUID,
@@ -69,7 +72,6 @@ class ShipmentEvent(SQLModel, table=True):
             primary_key=True,
         )
     )
-
     created_at: datetime = Field(
         sa_column=Column(
             postgresql.TIMESTAMP,
@@ -96,7 +98,7 @@ class User(SQLModel):
 
 
 class Seller(User, table=True):
-    __tablename__ = "seller"  # type: ignore
+    __tablename__ = "seller"
 
     id: UUID = Field(
         sa_column=Column(
@@ -122,7 +124,7 @@ class Seller(User, table=True):
 
 
 class DeliveryPartner(User, table=True):
-    __tablename__ = "delivery_partner"  # type: ignore
+    __tablename__ = "delivery_partner"
 
     id: UUID = Field(
         sa_column=Column(
@@ -153,7 +155,8 @@ class DeliveryPartner(User, table=True):
         return [
             shipment
             for shipment in self.shipments
-            if shipment.status != ShipmentStatus.delivered  # type: ignore
+            if shipment.status != ShipmentStatus.delivered
+            or shipment.status != ShipmentStatus.cancelled
         ]
 
     @property
