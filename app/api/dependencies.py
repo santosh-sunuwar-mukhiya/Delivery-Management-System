@@ -1,10 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import oauth2_scheme_seller, oauth2_scheme_partner
+from app.core.security import oauth2_scheme_partner, oauth2_scheme_seller
 from app.database.models import DeliveryPartner, Seller
 from app.database.redis import is_jti_blacklisted
 from app.database.session import get_session
@@ -13,7 +13,6 @@ from app.services.seller import SellerService
 from app.services.shipment import ShipmentService
 from app.services.shipment_event import ShipmentEventService
 from app.utils import decode_access_token
-
 
 # Asynchronous database session dep annotation
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -86,22 +85,25 @@ async def get_current_partner(
 
 
 # Shipment service dep
-def get_shipment_service(session: SessionDep):
+def get_shipment_service(
+    session: SessionDep,
+    tasks: BackgroundTasks,
+):
     return ShipmentService(
         session,
         DeliveryPartnerService(session),
-        ShipmentEventService(session),
+        ShipmentEventService(session, tasks),
     )
 
 
 # Seller service dep
-def get_seller_service(session: SessionDep):
-    return SellerService(session)
+def get_seller_service(session: SessionDep, tasks: BackgroundTasks):
+    return SellerService(session, tasks)
 
 
 # Delivery partner service dep
-def get_delivery_partner_service(session: SessionDep):
-    return DeliveryPartnerService(session)
+def get_delivery_partner_service(session: SessionDep, tasks: BackgroundTasks):
+    return DeliveryPartnerService(session, tasks)
 
 
 # Seller dep annotation
