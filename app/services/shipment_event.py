@@ -1,6 +1,11 @@
+from random import randint
+
+from app.config import app_settings
 from app.database.models import Shipment, ShipmentEvent, ShipmentStatus
+from app.database.redis import add_shipment_verification_code
 from app.services.base import BaseService
 from app.services.notification import NotificationService
+from app.utils import generate_url_safe_token
 
 
 class ShipmentEventService(BaseService):
@@ -75,10 +80,25 @@ class ShipmentEventService(BaseService):
             case ShipmentStatus.out_for_delivery:
                 subject="Your Order is Arriving Soon 🛵"
                 template_name = "mail_out_for_delivery.html"
-                
+
+                code = randint(100_000, 999_999)
+                await add_shipment_verification_code(shipment.id, code)
+
+                if shipment.client_contact_phone:
+                    await self.notification_service.send_sms(
+                        to=shipment.client_contact_phone,
+                        body=f"Your order is arriving soon! Share the {code} code with your "
+                        "delivery executive to receive your package."
+                    )
+                else:
+                    context["verification_code"] = code
+
+
             case ShipmentStatus.delivered:
                 subject = "Your Order is Delivered ✅"
                 context["seller"] = shipment.seller.name
+                token = generate_url_safe_token({"id": str(shipment.id)})
+                context["review_url"] = f"http://{app_settings.APP_DOMAIN}/shipment/review?token={token}"
                 template_name = "mail_delivered.html"
 
             case ShipmentStatus.cancelled:

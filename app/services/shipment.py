@@ -5,8 +5,10 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.shipment import ShipmentCreate, ShipmentUpdate
-from app.database.models import DeliveryPartner, Seller, Shipment, ShipmentStatus
+from app.database.models import DeliveryPartner, Review, Seller, Shipment, ShipmentStatus
+from app.database.redis import get_shipment_verification_code
 from app.services.shipment_event import ShipmentEventService
+from app.utils import decode_url_safe_token
 
 from .base import BaseService
 from .delivery_partner import DeliveryPartnerService
@@ -71,9 +73,21 @@ class ShipmentService(BaseService):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not authorized",
             )
-        
-        update = shipment_update.model_dump(exclude_none=True)
-        
+
+        if shipment_update.status == ShipmentStatus.delivered:
+            code = await get_shipment_verification_code(shipment.id)
+
+            if code != shipment_update.verification_code:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Client not authorized",
+                )
+
+        update = shipment_update.model_dump(
+            exclude_none=True,
+            exclude=["verification_code"],
+        )
+
         if shipment_update.estimated_delivery:
             shipment.estimated_delivery = shipment_update.estimated_delivery
 
@@ -84,7 +98,28 @@ class ShipmentService(BaseService):
             )
 
         return await self._update(shipment)
+    
+    async def rate(self, token: str, rating: int, comment: str):
+        token_data = decode_url_safe_token(token)
 
+        if not token_data:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authorized",
+            )
+
+        shipment = await self.get(UUID(token_data["id"]))
+
+        new_review = Review(
+            rating=rating,
+            comment=comment if comment else None,
+            shipment_id=shipment.id,
+        )
+
+        self.session.add(new_review)
+        await self.session.commit()
+
+    
     async def cancel(self, id: UUID, seller: Seller) -> Shipment:
         # Validate the seller
         shipment = await self.get(id)
@@ -94,7 +129,7 @@ class ShipmentService(BaseService):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not Authorized",
             )
-        
+
         event = await self.event_service.add(
             shipment=shipment,
             status=ShipmentStatus.cancelled,
@@ -102,7 +137,6 @@ class ShipmentService(BaseService):
 
         shipment.timeline.append(event)
         return shipment
-
 
     # Delete a shipment
     async def delete(self, id: UUID) -> None:
