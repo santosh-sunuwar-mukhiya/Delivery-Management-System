@@ -6,7 +6,6 @@ from app.api.router import master_router
 app = FastAPI()
 app.include_router(master_router)
 
-
 ### Scalar API Documentation
 @app.get("/scalar", include_in_schema=False)
 def get_scalar_docs():

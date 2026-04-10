@@ -91,7 +91,7 @@ def get_shipment_service(
 ):
     return ShipmentService(
         session,
-        DeliveryPartnerService(session),
+        DeliveryPartnerService(session, tasks),
         ShipmentEventService(session, tasks),
     )
 
